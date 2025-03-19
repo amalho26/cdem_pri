@@ -1,0 +1,35 @@
+[
+    {
+      "category": "Canadian Democracy Checkup",
+      "files": [
+        { "name": "Canadian Democracy Checkup 2023", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DACEAE" },
+        { "name": "Canadian Democracy Checkup 2022", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/21L3YU" },
+        { "name": "Canadian Democracy Checkup 2021", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/KCIK9D" },
+        {"name": "Canadian Democracy Checkup 2020", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/BVZ2NL" },
+        {"name": "Canadian Democracy Checkup 2019", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/GZOEZZ"}
+      ]
+    },
+    {
+      "category": "Canadian Election Study",
+      "files": [
+        { "name": "Canadian Election Study 2021", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/XBZHKC" },
+        { "name": "Canadian Election Study 2019 online)", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DUS88V" },
+        { "name": "Canadian Election Study 2019 (phone)", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/8RHLG1" }
+      ]
+    },
+    {
+        "category": "Provincal Election Study",
+        "files": [
+          { "name": "2023 Manitoba Election Study", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/YHVELW" },
+          { "name": "2023 Alberta Election Study", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/FDFJT8" },
+          {"name": "2022 Quebec Election Study", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/PAQBDR" },
+          {"name": "2022 Ontario Election Study", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/XFUVJJ" },
+          {"name": "2021 Nova Scotia Election Study", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/XFUVJJ" },
+          {"name": "2021 Newfoundland and Labrador Election Study", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/XFUVJJ" },
+          {"name": "2020 British Columbia Election Study", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/NXESNA" },
+          {"name": "2020 Saskatchewan Election Study", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/A1CAXU" },
+          {"name": "2020 New Brunswick Election Study", "link": "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/WC5290" }
+        ]
+      }
+  ]
+  
