@@ -19,7 +19,7 @@ import ChartTypeSelector from "./ChartTypeSelector";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 
-const ChartForm = ({data}) => {
+const ChartForm = () => {
   const [selectedYear, setSelectedYear] = useState("");
   const [independentVariables, setIndependentVariables] = useState([]);
   const [dependentVariables, setDependentVariables] = useState([]);
@@ -33,7 +33,33 @@ const ChartForm = ({data}) => {
   const [graphTitle, setGraphTitle] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    // Fetch data from the backend
+    console.log("/////////////////////////////////")
+    axios
+      .get('http://localhost:5001/api/all_data', {
+        headers: {
+          "db": "2021_democracy_checkup", // Set the database name dynamically
+        },
+      }) // Replace with your API endpoint
+      .then((response) => {
+        setData(response.data); // Set the data in state
+        console.log("/////////////////////////////////")
+        console.log(response.data);
+      })
+      .catch((err) => {
+        console.error('Error fetching data:', err);
+      });
+  }, [selectedYear]); // Empty dependency array to run this only once on component mount
+  
+  
+  
   // Load the JSON file based on the selected year
+  
+  
   useEffect(() => {
     
     console.log(data)

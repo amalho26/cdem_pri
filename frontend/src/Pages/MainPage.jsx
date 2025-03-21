@@ -14,7 +14,11 @@ const MainPage = () => {
   useEffect(() => {
     // Fetch data from the backend
     axios
-      .get('http://localhost:5001/api/all_data') // Replace with your API endpoint
+    .get('http://localhost:5001/api/all_data', {
+      headers: {
+        "db": "2021_democracy_checkup", // Set the database name dynamically
+      },
+    })
       .then((response) => {
         setItems(response.data); // Set the data in state
         console.log(response.data);
