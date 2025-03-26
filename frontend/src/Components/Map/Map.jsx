@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 const Map = ({ provinceCounts }) => {
-  const [hoveredProvince, setHoveredProvince] = useState(null);
   const [geoJsonData, setGeoJsonData] = useState(null);
 
   const canadaGeoDataPath = "/georef-canada-province.geojson"; // GeoJSON in public folder
@@ -28,6 +27,7 @@ const Map = ({ provinceCounts }) => {
     {}
   );
 
+  // Styles for hover highlight
   const highlightStyle = {
     weight: 3,
     color: "#ff7800",
@@ -35,6 +35,7 @@ const Map = ({ provinceCounts }) => {
     fillColor: "#ff7800",
   };
 
+  // Choropleth color scale
   const getColor = (frequency) => {
     return frequency > 1000
       ? "#800026"
@@ -53,6 +54,7 @@ const Map = ({ provinceCounts }) => {
       : "#FFEDA0";
   };
 
+  // Load GeoJSON once
   useEffect(() => {
     const fetchGeoJson = async () => {
       try {
@@ -69,6 +71,7 @@ const Map = ({ provinceCounts }) => {
     fetchGeoJson();
   }, []);
 
+  // Default style for each province
   const styleFeature = (feature) => {
     const provinceName = feature.properties.prov_name_en;
     const provinceId = provinceNameToId[provinceName];
@@ -83,25 +86,32 @@ const Map = ({ provinceCounts }) => {
     };
   };
 
+  // Highlight on mouseover
   const highlightFeature = (e) => {
     const layer = e.target;
-    const provinceName = layer.feature.properties.prov_name_en;
-    const provinceId = provinceNameToId[provinceName];
-    const frequency =
-      provinceCounts.find((entry) => entry.province === provinceId)?.count || 0;
-
-    setHoveredProvince({ name: provinceName, frequency });
     layer.setStyle(highlightStyle);
     layer.bringToFront();
   };
 
+  // Reset style on mouseout
   const resetHighlight = (e) => {
     const layer = e.target;
-    setHoveredProvince(null);
     layer.setStyle(styleFeature(layer.feature));
   };
 
+  // Bind tooltip and hover events
   const onEachFeature = (feature, layer) => {
+    const provinceName = feature.properties.prov_name_en;
+    const provinceId = provinceNameToId[provinceName];
+    const frequency =
+      provinceCounts.find((entry) => entry.province === provinceId)?.count || 0;
+
+    // Bind a Leaflet tooltip showing the province & count
+    layer.bindTooltip(`${provinceName} (Total: ${frequency})`, {
+      sticky: true,
+    });
+
+    // Set up hover handlers
     layer.on({
       mouseover: highlightFeature,
       mouseout: resetHighlight,
@@ -109,9 +119,11 @@ const Map = ({ provinceCounts }) => {
   };
 
   return (
-    <div className="w-full">
+    // Make this div fill the parent container
+    <div className="w-full h-full">
       <MapContainer
-        className="h-[400px] w-full rounded-lg shadow"
+        // Use h-full w-full to ensure the map fills its container
+        className="h-full w-full"
         center={[62.0, -96.0]} // Centered on Canada
         zoom={4}
         scrollWheelZoom={true}
@@ -128,11 +140,6 @@ const Map = ({ provinceCounts }) => {
           />
         )}
       </MapContainer>
-      {hoveredProvince && (
-        <div className="mt-2 text-lg font-bold text-center">
-          Hovering over: {hoveredProvince.name} (Total: {hoveredProvince.frequency})
-        </div>
-      )}
     </div>
   );
 };

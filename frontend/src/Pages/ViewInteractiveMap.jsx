@@ -73,7 +73,7 @@ const ViewInteractiveMapPage = () => {
     }
   }, [selectedIndependent, independentVariables]);
 
-  // Fetch and filter map data using axios.get (like in ChartForm)
+  // Fetch and filter map data
   useEffect(() => {
     if (selectedYear && selectedIndependent) {
       setLoading(true);
@@ -84,41 +84,27 @@ const ViewInteractiveMapPage = () => {
           },
         })
         .then((response) => {
-          // Start with all data from the DB
           let filteredData = response.data;
-          console.log(filteredData[4].dc21_province);
-          for(let i=0; i<filteredData.length; i++){
-            if(response.data[i].dc21_province=="3" || response.data[i].dc21_province==8 || response.data[i].dc21_province==13){
-              console.log(response.data);
-            }
-          }
-          
-          
 
-          // Apply filtering based on the selected independent variable and filters.
-          // This mimics the ChartForm logic: if filters are selected, only include rows
-          // where the value in the column [selectedIndependent] matches one of the selectedFilters.
+          // If any filters selected, keep only matching rows
           if (selectedFilters && selectedFilters.length > 0) {
             filteredData = filteredData.filter((row) =>
               selectedFilters.includes(row[selectedIndependent])
             );
           }
 
-          // Compute province counts from the filtered data.
-          const provinceCounts = filteredData.reduce((acc, record) => {
-            const provinceId = record.dc21_province; // Adjust column name as needed
+          // Compute province counts
+          const counts = filteredData.reduce((acc, record) => {
+            const provinceId = record.dc21_province; // Adjust if your column name differs
             acc[provinceId] = (acc[provinceId] || 0) + 1;
             return acc;
           }, {});
 
-          const formattedCounts = Object.entries(provinceCounts).map(
-            ([province, count]) => ({
-              province: Number(province),
-              count,
-            })
-          );
-          console.log(filteredData);
-          console.log(formattedCounts);
+          const formattedCounts = Object.entries(counts).map(([province, count]) => ({
+            province: Number(province),
+            count,
+          }));
+
           setMapData(filteredData);
           setProvinceCounts(formattedCounts);
         })
@@ -136,9 +122,10 @@ const ViewInteractiveMapPage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="flex flex-1">
-        {/* Sidebar Form */}
-        <aside id="sidebar" className="w-80 bg-gray-50 p-6 border-r border-gray-200 relative">
+      {/* This container will stretch to fill the screen height */}
+      <div className="flex flex-1 h-screen overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-80 bg-gray-50 p-6 border-r border-gray-200 relative">
           <h1 className="text-2xl font-bold mb-4">View Interactive Map</h1>
           {/* Year Selection */}
           <div className="mb-4">
@@ -172,7 +159,7 @@ const ViewInteractiveMapPage = () => {
               ))}
             </select>
           </div>
-          {/* Filters */}
+          {/* Filter By */}
           <div className="mb-4">
             <button
               className="w-full h-12 bg-blue-600 text-white rounded-lg"
@@ -234,14 +221,18 @@ const ViewInteractiveMapPage = () => {
             </select>
           </div>
         </aside>
-        {/* Main Map Display */}
+
+        {/* Main Map Area */}
         <main className="flex-1 relative">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <p className="text-lg font-semibold">Loading...</p>
             </div>
           ) : (
-            <Map provinceCounts={provinceCounts} />
+            // The Map component now fills all available space
+            <div className="w-full h-full">
+              <Map provinceCounts={provinceCounts} />
+            </div>
           )}
         </main>
       </div>
