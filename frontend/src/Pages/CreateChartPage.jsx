@@ -1,27 +1,33 @@
 import React from 'react';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
 import Navbar from '../Components/Navbar';
 import ChartForm from '../Components/createChart/ChartForm';
 
-
 const CreateChartPage = () => {
-
-  
-
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Use the custom Header */}
-      <Navbar />
+    <div className="relative min-h-screen">
+      {/* Background container */}
+      <div
+        className="
+          absolute
+          inset-0
+          bg-[url('/src/Assets/background.png')]
+          bg-cover
+          bg-center
+          opacity-40
+        "
+      />
 
-      <main className="flex flex-col items-center py-5 px-10">
-        <div className="max-w-[960px] w-full">
-          {/* Chart Creation Form */}
-          <ChartForm />
+      {/* Foreground content */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        <Navbar />
 
-        
-        </div>
-      </main>
+        <main className="flex flex-col items-center py-5 px-10">
+          <div className="max-w-[960px] w-full bg-white/90 p-4 rounded-md shadow-lg">
+            {/* Chart Creation Form */}
+            <ChartForm />
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

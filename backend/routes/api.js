@@ -26,19 +26,18 @@ router.use((req, res, next) => {
 // Simple route to join all tables on survey_metadata.responseID
 router.get("/all_data", async (req, res) => {
   try {
-    const tables = [
-      "confidence", "consent_demographics", "embedded_data", "federal_info", "feedback",
-      "financial_status", "fl155_attitudes", "fl160_attitudes", "fl36_attitudes",
-      "fl38_attitudes", "fl39_attitudes", "fl46_attitudes", "fl51_attitudes",
-      "fl52_attitudes", "fl54_ties", "fl56_participation", "government_efficacy",
-      "government_satisfaction", "govt_programs_word", "group_thermometers",
-      "immigration", "jurisdiction", "language", "leader_ratings", "media_economic",
-      "occupation", "origin", "parental_background", "party_affiliation",
-      "political_attitudes", "political_participation_civ", "political_participation_ins",
-      "political_participation_pro", "political_preferences", "property", "religion",
-      "social_trust", "socioeconomic_status", "survey_flags", "survey_language",
-      "visual_minority", "vote_2019"
-    ];
+
+    console.log(req.db)
+    const tableQuery = `
+    SELECT table_name 
+    FROM information_schema.tables 
+    WHERE table_schema = '${req.db}'
+  `;
+  const tableResults = await req.socket.query(tableQuery);
+
+  // Map results to an array of table names and filter out 'survey_metadata'
+  const tables = tableResults[0].map(row => row.TABLE_NAME).filter(table => table !== 'survey_metadata'); // Exclude metadata table if needed
+    
 
     let query = `SELECT * FROM ${req.db}.survey_metadata`;
 
@@ -47,7 +46,7 @@ router.get("/all_data", async (req, res) => {
                  ON survey_metadata.responseID = ${table}.responseID`;
     });
 
-    console.log(query);
+    //console.log(query);
 
     const [results] = await req.socket.query(query);
     res.json(results);

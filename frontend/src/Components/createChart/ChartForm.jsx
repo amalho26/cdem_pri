@@ -32,44 +32,35 @@ const ChartForm = () => {
   const [chartType, setChartType] = useState("");
   const [graphTitle, setGraphTitle] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sqlData, setSqlData] = useState([]);
+  const isFormComplete = selectedYear && selectedDependent && chartType && graphTitle;
 
-  
-  const [data, setData] = useState([]);
+  // Fetch data from DB
+  useEffect(() => {
+    if (selectedYear) {
+      axios
+        .get("http://localhost:5001/api/all_data", {
+          headers: {
+            db: `${selectedYear}_democracy_checkup`,
+          },
+        })
+        .then((response) => {
+          setSqlData(response.data);
+        })
+        .catch((err) => {
+          console.error("Error:", err);
+        });
+    }
+  }, [selectedYear]);
 
+  // Fetch question data
   useEffect(() => {
-    // Fetch data from the backend
-    console.log("/////////////////////////////////")
-    axios
-      .get('http://localhost:5001/api/all_data', {
-        headers: {
-          "db": "2021_democracy_checkup", // Set the database name dynamically
-        },
-      }) // Replace with your API endpoint
-      .then((response) => {
-        setData(response.data); // Set the data in state
-        console.log("/////////////////////////////////")
-        console.log(response.data);
-      })
-      .catch((err) => {
-        console.error('Error fetching data:', err);
-      });
-  }, [selectedYear]); // Empty dependency array to run this only once on component mount
-  
-  
-  
-  // Load the JSON file based on the selected year
-  
-  
-  useEffect(() => {
-    
-    console.log(data)
     if (selectedYear) {
       const fetchData = async () => {
         try {
           const response = await import(`../../Data/questions${selectedYear}.json`);
           const data = response.default;
 
-          // Load independent variables
           if (data.independent) {
             const independent = Object.entries(data.independent).map(([key, value]) => ({
               id: key,
@@ -79,7 +70,6 @@ const ChartForm = () => {
             setIndependentVariables(independent);
           }
 
-          // Load dependent variables
           if (data.dependent) {
             const dependent = Object.entries(data.dependent).map(([key, value]) => ({
               id: key,
@@ -89,7 +79,7 @@ const ChartForm = () => {
             setDependentVariables(dependent);
           }
         } catch (error) {
-          console.error("Error loading JSON data:", error);
+          console.error("JSON data error:", error);
         }
       };
 
@@ -101,7 +91,7 @@ const ChartForm = () => {
     }
   }, [selectedYear]);
 
-  // Update filters when an independent variable is selected
+  // Update filter options when Independent Variable changes
   useEffect(() => {
     if (selectedIndependent) {
       const selectedQuestion = independentVariables.find(
@@ -123,6 +113,7 @@ const ChartForm = () => {
     }
   }, [selectedIndependent, independentVariables]);
 
+  // Update dependent answer mapping
   useEffect(() => {
     const selectedDependentQuestion = dependentVariables.find(
       (item) => item.id === selectedDependent
@@ -134,104 +125,61 @@ const ChartForm = () => {
     }
   }, [selectedDependent, dependentVariables]);
 
-  // Handle multiple filter selection
+  // Handle filter selection
   const handleFilterChange = (e) => {
     const { options } = e.target;
     const selectedValues = Array.from(options)
       .filter((option) => option.selected)
       .map((option) => option.value);
-
     setSelectedFilters(selectedValues);
   };
 
+  // Toggle modal for filters
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-  
-
+  // Generate graph data
   const generateGraph = () => {
     try {
-      if (!data || data.length === 0) {
+      if (!sqlData || sqlData.length === 0) {
         console.error("No data available to generate graph.");
         return;
       }
-  
-      console.log("Selected Independent Variable:", selectedIndependent);
-      console.log("Selected Dependent Variable:", selectedDependent);
-      console.log("Selected Filters:", selectedFilters);
-  
-      // Step 1: Ensure selectedIndependent and selectedDependent exist
-      if (!selectedIndependent || !selectedDependent) {
-        console.error("Independent and dependent variables must be selected.");
-        return;
-      }
-  
-      // Step 2: Filter the data based on selected filters
-      let filteredData = [...data]; // Copy data to avoid mutation
-  
+
+      // Filter data based on selected filters
+      let filteredData = [...sqlData];
       if (selectedFilters && selectedFilters.length > 0) {
-        filteredData = filteredData.filter(row =>
+        filteredData = filteredData.filter((row) =>
           selectedFilters.includes(row[selectedIndependent])
         );
       }
-  
-      // Step 3: Extract only the selected columns
-      const selectedData = filteredData.map(row => ({
+
+      const selectedData = filteredData.map((row) => ({
         independent: row[selectedIndependent],
         dependent: row[selectedDependent],
       }));
-  
-      // Step 4: Compute frequency of each value in the dependent variable
+
+      // Count frequencies of dependent values
       const frequencyMap = selectedData.reduce((acc, row) => {
         const value = row.dependent;
         acc[value] = (acc[value] || 0) + 1;
         return acc;
       }, {});
-  
-      // Step 5: Format data for graph
+
+      // Format graph data
       const formattedData = Object.entries(frequencyMap).map(([key, count]) => ({
         dependent: dependentAnswerMapping[key]?.Display || `Value ${key}`,
         frequency: count,
       }));
-  
-       setGraphData(formattedData);
+
+      setGraphData(formattedData);
     } catch (error) {
       console.error("Error generating graph:", error);
     }
   };
-  
-  
-  // Fetch data from SQL when the "Generate Graph" button is clicked
-  // const generateGraph = async () => {
-  //   try {
-  //     const tableName = `democracy_checkup_${selectedYear}`;
-  //     const response = await axios.post("http://localhost:5001/api/all-data", {
-  //       table: tableName,
-  //       columns: [selectedIndependent, selectedDependent],
-  //       filters: selectedFilters,
-  //     });
 
-  //     // Calculate the frequency of each value in the dependent variable
-  //     const frequencyMap = response.data.reduce((acc, row) => {
-  //       const value = row[selectedDependent];
-  //       acc[value] = (acc[value] || 0) + 1;
-  //       return acc;
-  //     }, {});
-
-  //     // Format the data for the graph
-  //     const formattedData = Object.entries(frequencyMap).map(([key, count]) => ({
-  //       dependent: dependentAnswerMapping[key]?.Display || `Value ${key}`,
-  //       frequency: count,
-  //     }));
-
-  //     setGraphData(formattedData);
-  //   } catch (error) {
-  //     console.error("Error fetching data from SQL:", error);
-  //   }
-  // };
-
-  // Export graph and title to PDF
+  // Export chart as PDF
   const exportToPDF = () => {
     const input = document.getElementById("graph-container");
     html2canvas(input).then((canvas) => {
@@ -243,222 +191,290 @@ const ChartForm = () => {
     });
   };
 
-  // Check if all inputs are selected
-  const isFormComplete = selectedYear && selectedDependent && chartType && graphTitle;
-
   return (
-    <div className="px-4 py-3">
-      <h1 className="text-[#181010] text-2xl font-bold mb-4 text-center">Create a New Chart</h1>
+    <div className="px-4 py-3 flex flex-col md:flex-row gap-8">
+      {/* Left Column: Form */}
+      <div className="md:w-1/2">
+        <h1 className="text-[#181010] text-2xl font-bold mb-4 text-center">
+          Create a New Chart
+        </h1>
 
-      {/* Year Selection */}
-      <div className="mb-4">
-        <label className="flex flex-col">
-          <p className="text-[#181010] text-base font-medium mb-2">Year</p>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="w-full h-14 rounded-xl bg-[#f5f0f0] p-4 text-base"
-          >
-            <option value="">Select Year</option>
-            <option value="2019">2019</option>
-            <option value="2020">2020</option>
-            <option value="2021">2021</option>
-            <option value="2022">2022</option>
-            <option value="2023">2023</option>
-            <option value="2024">2024</option>
-          </select>
-        </label>
-      </div>
-
-      <div className="mb-4">
-        <label className="flex flex-col">
-          <p className="text-[#181010] text-base font-medium mb-2">Independent Variable</p>
-          <select
-            value={selectedIndependent}
-            onChange={(e) => setSelectedIndependent(e.target.value)}
-            className="w-full h-14 rounded-xl bg-[#f5f0f0] p-4 text-base"
-          >
-            <option value="">Select Independent Variable</option>
-            {independentVariables.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.mainQuestion}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {/* Filters */}
-      {/* Filters */}
-      {filters.length > 0 && (
+        {/* Year Selection */}
         <div className="mb-4">
-          <button
-            className="w-full h-14 bg-[#f5f0f0] text-[#181010] rounded-xl text-base font-medium"
-            onClick={toggleModal}
-          >
-            Filter By
-          </button>
+          <label className="flex flex-col">
+            <p className="text-[#181010] text-base font-medium mb-2">Year</p>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full h-14 rounded-xl bg-[#f5f0f0] p-4 text-base"
+            >
+              <option value="">Select Year</option>
+              <option value="2019">2019</option>
+              <option value="2020">2020</option>
+              <option value="2021">2021</option>
+              <option value="2022">2022</option>
+              <option value="2023">2023</option>
+              <option value="2024">2024</option>
+            </select>
+          </label>
+        </div>
 
-          <Modal
-            isOpen={isModalOpen}
-            onRequestClose={toggleModal}
-            contentLabel="Filter Selection"
-            ariaHideApp={false}
-            className="bg-white p-6 rounded-lg shadow-lg max-w-lg mx-auto mt-20"
-            overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-          >
-            <h2 className="text-lg font-bold mb-4">Select Filters</h2>
-            <div className="mb-4">
-              <label className="flex flex-col">
-                <select
-                  multiple
-                  value={selectedFilters}
-                  onChange={handleFilterChange}
-                  className="w-full h-40 rounded-xl bg-[#f5f0f0] p-4 text-base"
+        {/* Independent Variable */}
+        <div className="mb-4">
+          <label className="flex flex-col">
+            <p className="text-[#181010] text-base font-medium mb-2">
+              Independent Variable
+            </p>
+            <select
+              value={selectedIndependent}
+              onChange={(e) => setSelectedIndependent(e.target.value)}
+              className="w-full h-14 rounded-xl bg-[#f5f0f0] p-4 text-base"
+            >
+              <option value="">Select Independent Variable</option>
+              {independentVariables.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.mainQuestion}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {/* Filters */}
+        {filters.length > 0 && (
+          <div className="mb-4">
+            <button
+              className="w-full h-14 bg-[#f5f0f0] text-[#181010] rounded-xl text-base font-medium"
+              onClick={toggleModal}
+            >
+              Filter By
+            </button>
+
+            {/* Modal (ensure high z-index) */}
+            <Modal
+              isOpen={isModalOpen}
+              onRequestClose={toggleModal}
+              contentLabel="Filter Selection"
+              ariaHideApp={false}
+              className="relative z-[60] bg-white p-6 rounded-lg shadow-lg max-w-lg mx-auto mt-20"
+              overlayClassName="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center"
+            >
+              <h2 className="text-lg font-bold mb-4">Select Filters</h2>
+              <div className="mb-4">
+                <label className="flex flex-col">
+                  <select
+                    multiple
+                    value={selectedFilters}
+                    onChange={handleFilterChange}
+                    className="w-full h-40 rounded-xl bg-[#f5f0f0] p-4 text-base"
+                  >
+                    {filters.map((filter) => (
+                      <option key={filter.id} value={filter.id}>
+                        {filter.display}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="flex justify-end gap-4">
+                <button
+                  className="bg-gray-300 px-4 py-2 rounded-lg"
+                  onClick={toggleModal}
                 >
-                  {filters.map((filter) => (
-                    <option key={filter.id} value={filter.id}>
-                      {filter.display}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div className="flex justify-end gap-4">
-              <button
-                className="bg-gray-300 px-4 py-2 rounded-lg"
-                onClick={toggleModal}
-              >
-                Cancel
-              </button>
-              <button
-                className="bg-[#ff0000] text-white px-4 py-2 rounded-lg"
-                onClick={toggleModal}
-              >
-                Apply Filters
-              </button>
-            </div>
-          </Modal>
+                  Cancel
+                </button>
+                <button
+                  className="bg-[#ff0000] text-white px-4 py-2 rounded-lg"
+                  onClick={toggleModal}
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </Modal>
+          </div>
+        )}
+
+        {/* Dependent Variable */}
+        <div className="mb-4">
+          <label className="flex flex-col">
+            <p className="text-[#181010] text-base font-medium mb-2">
+              Dependent Variable
+            </p>
+            <select
+              value={selectedDependent}
+              onChange={(e) => setSelectedDependent(e.target.value)}
+              className="w-full h-14 rounded-xl bg-[#f5f0f0] p-4 text-base"
+            >
+              <option value="">Select Dependent Variable</option>
+              {dependentVariables.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.mainQuestion}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-      )}
 
-       {/* Dependent Variable */}
-       <div className="mb-4">
-        <label className="flex flex-col">
-          <p className="text-[#181010] text-base font-medium mb-2">Dependent Variable</p>
-          <select
-            value={selectedDependent}
-            onChange={(e) => setSelectedDependent(e.target.value)}
-            className="w-full h-14 rounded-xl bg-[#f5f0f0] p-4 text-base"
-          >
-            <option value="">Select Dependent Variable</option>
-            {dependentVariables.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.mainQuestion}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {/* Chart Type Selector */}
-      <div className="mb-4">
-        <label className="flex flex-col">
-        <ChartTypeSelector setChartType={setChartType} />
-        </label>
-      </div>
-      
-
-      {/* Graph Title */}
-      <div className="mb-4">
-        <label className="flex flex-col">
-          <p className="text-[#181010] text-base font-medium mb-2">Graph Title</p>
-          <input
-            type="text"
-            value={graphTitle}
-            onChange={(e) => setGraphTitle(e.target.value)}
-            placeholder="Enter graph title"
-            className="w-full h-14 rounded-xl bg-[#f5f0f0] p-4 text-base"
-          />
-        </label>
-      </div>
-
-      {/* Generate Graph Button */}
-      {isFormComplete && (
-        <div className="mt-4">
-          <button
-            className="w-full h-14 bg-[#ff0000] text-white rounded-xl text-lg font-bold"
-            onClick={generateGraph}
-          >
-            Generate Graph
-          </button>
+        {/* Chart Type Selector */}
+        <div className="mb-4">
+          <ChartTypeSelector setChartType={setChartType} />
         </div>
-      )}
 
-      {/* Display Graph */}
-      {graphData.length > 0 && (
-  <div id="graph-container" className="mt-6 flex flex-col items-center">
-    <h2 className="text-lg font-bold mb-4">{graphTitle}</h2>
-    {chartType === "Bar" && (
-      <div className="flex justify-center">
-        <BarChart
-          width={800}
-          height={400}
-          data={graphData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="dependent" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="frequency" fill="#8884d8" />
-        </BarChart>
-      </div>
-    )}
-    {chartType === "Pie" && (
-      <div className="flex justify-center">
-        <PieChart width={400} height={400}>
-          <Pie
-            data={graphData}
-            dataKey="frequency"
-            nameKey="dependent"
-            cx="50%"
-            cy="50%"
-            outerRadius={150}
-            fill="#8884d8"
-            label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
-          >
-            {graphData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={`hsl(${index * 50}, 70%, 50%)`} />
-            ))}
-          </Pie>
-          <Tooltip />
-        </PieChart>
-      </div>
-    )}
-    {chartType === "Scatter" && (
-      <div className="flex justify-center">
-        <ScatterChart width={800} height={400}>
-          <CartesianGrid />
-          <XAxis type="category" dataKey="dependent" />
-          <YAxis type="number" dataKey="frequency" />
-          <Tooltip />
-          <Scatter data={graphData} fill="#8884d8" />
-        </ScatterChart>
-      </div>
-    )}
-    <div className="mt-4">
-      <button
-        className="w-full max-w-xs h-14 bg-[red] text-white rounded-xl text-lg font-bold"
-        onClick={exportToPDF}
-      >
-        Export
-      </button>
-    </div>
-  </div>
-)}
+        {/* Graph Title */}
+        <div className="mb-4">
+          <label className="flex flex-col">
+            <p className="text-[#181010] text-base font-medium mb-2">
+              Graph Title
+            </p>
+            <input
+              type="text"
+              value={graphTitle}
+              onChange={(e) => setGraphTitle(e.target.value)}
+              placeholder="Enter graph title"
+              className="w-full h-14 rounded-xl bg-[#f5f0f0] p-4 text-base"
+            />
+          </label>
+        </div>
 
+        {/* Buttons Row */}
+        <div className="flex items-center space-x-4 mt-4">
+          {/** Generate Graph (only if form is complete) */}
+          {isFormComplete && (
+            <button
+              className="flex-1 h-14 bg-[#ff0000] text-white rounded-xl text-lg font-bold"
+              onClick={generateGraph}
+            >
+              Generate Graph
+            </button>
+          )}
+
+          {/** Export PDF (only if a chart is generated) */}
+          {graphData.length > 0 && (
+            <button
+              className="flex-1 h-14 bg-[#ff0000] text-white rounded-xl text-lg font-bold"
+              onClick={exportToPDF}
+            >
+              Export Chart as PDF
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Right Column: Chart */}
+      <div className="md:w-1/2 bg-white shadow-md rounded-lg p-6 flex flex-col items-center">
+        {graphData.length > 0 ? (
+          <div id="graph-container" className="w-full">
+            <h2 className="text-xl font-bold mb-4 text-center text-[#181010]">
+              {graphTitle}
+            </h2>
+
+            {/* Bar Chart */}
+            {chartType === "Bar" && (
+              <div className="flex justify-center">
+                <BarChart
+                  width={700}
+                  height={500}
+                  data={graphData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="dependent"
+                    tick={{ angle: -90, textAnchor: "end" }}
+                    interval={0}
+                    height={100}
+                    label={{
+                      value: "Dependent Variable",
+                      position: "insideBottom",
+                      offset: -50,
+                    }}
+                  />
+                  <YAxis
+                    label={{
+                      value: "Frequency",
+                      angle: -90,
+                      position: "insideLeft",
+                      offset: 10,
+                    }}
+                  />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="frequency" fill="#8884d8" />
+                </BarChart>
+              </div>
+            )}
+
+            {/* Pie Chart */}
+            {chartType === "Pie" && (
+              <div className="flex justify-center">
+                <PieChart width={500} height={500}>
+                  <Pie
+                    data={graphData}
+                    dataKey="frequency"
+                    nameKey="dependent"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={180}
+                    fill="#8884d8"
+                    label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
+                  >
+                    {graphData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={`hsl(${index * 50}, 70%, 50%)`}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </div>
+            )}
+
+            {/* Scatter Chart */}
+            {chartType === "Scatter" && (
+              <div className="flex justify-center">
+                <ScatterChart
+                  width={700}
+                  height={500}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                >
+                  <CartesianGrid />
+                  <XAxis
+                    type="category"
+                    dataKey="dependent"
+                    tick={{ angle: -90, textAnchor: "end" }}
+                    interval={0}
+                    height={100}
+                    label={{
+                      value: "Dependent Variable",
+                      position: "insideBottom",
+                      offset: -50,
+                    }}
+                  />
+                  <YAxis
+                    type="number"
+                    dataKey="frequency"
+                    label={{
+                      value: "Frequency",
+                      angle: -90,
+                      position: "insideLeft",
+                      offset: 10,
+                    }}
+                  />
+                  <Tooltip />
+                  <Scatter data={graphData} fill="#8884d8" />
+                </ScatterChart>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500 text-center">
+              Your chart will appear here once generated.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

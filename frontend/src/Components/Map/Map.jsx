@@ -6,9 +6,7 @@ const Map = ({ provinceCounts }) => {
   const [hoveredProvince, setHoveredProvince] = useState(null);
   const [geoJsonData, setGeoJsonData] = useState(null);
 
-  const canadaGeoDataPath = "/georef-canada-province.geojson"; // GeoJSON should be in the public folder
-
-  // Province ID to Name Mapping
+  const canadaGeoDataPath = "/georef-canada-province.geojson"; // GeoJSON in public folder
   const provinceIdToName = {
     1: "Alberta",
     2: "British Columbia",
@@ -25,21 +23,11 @@ const Map = ({ provinceCounts }) => {
     13: "Yukon",
   };
 
-  // Reverse Mapping (Name to ID)
   const provinceNameToId = Object.entries(provinceIdToName).reduce(
     (acc, [id, name]) => ({ ...acc, [name]: parseInt(id) }),
     {}
   );
 
-  // Default styles for provinces
-  const defaultStyle = {
-    weight: 1,
-    color: "#3388ff",
-    fillOpacity: 0.2,
-    fillColor: "transparent",
-  };
-
-  // Style for highlighting provinces
   const highlightStyle = {
     weight: 3,
     color: "#ff7800",
@@ -47,7 +35,6 @@ const Map = ({ provinceCounts }) => {
     fillColor: "#ff7800",
   };
 
-  // Map color intensities for heat map
   const getColor = (frequency) => {
     return frequency > 1000
       ? "#800026"
@@ -66,7 +53,6 @@ const Map = ({ provinceCounts }) => {
       : "#FFEDA0";
   };
 
-  // Load GeoJSON data
   useEffect(() => {
     const fetchGeoJson = async () => {
       try {
@@ -83,10 +69,9 @@ const Map = ({ provinceCounts }) => {
     fetchGeoJson();
   }, []);
 
-  // Style each province based on its frequency
   const styleFeature = (feature) => {
-    const provinceName = feature.properties.prov_name_en; // Assuming GeoJSON has a `name` field
-    const provinceId = provinceNameToId[provinceName]; // Get province ID from name
+    const provinceName = feature.properties.prov_name_en;
+    const provinceId = provinceNameToId[provinceName];
     const frequency =
       provinceCounts.find((entry) => entry.province === provinceId)?.count || 0;
 
@@ -98,11 +83,10 @@ const Map = ({ provinceCounts }) => {
     };
   };
 
-  // Highlight province on hover
   const highlightFeature = (e) => {
     const layer = e.target;
-    const provinceName = layer.feature.properties.prov_name_en; // Assuming GeoJSON has a `name` field
-    const provinceId = provinceNameToId[provinceName]; // Get province ID from name
+    const provinceName = layer.feature.properties.prov_name_en;
+    const provinceId = provinceNameToId[provinceName];
     const frequency =
       provinceCounts.find((entry) => entry.province === provinceId)?.count || 0;
 
@@ -111,14 +95,12 @@ const Map = ({ provinceCounts }) => {
     layer.bringToFront();
   };
 
-  // Reset highlight on mouse out
   const resetHighlight = (e) => {
     const layer = e.target;
     setHoveredProvince(null);
     layer.setStyle(styleFeature(layer.feature));
   };
 
-  // Attach events to each GeoJSON feature
   const onEachFeature = (feature, layer) => {
     layer.on({
       mouseover: highlightFeature,
@@ -127,9 +109,9 @@ const Map = ({ provinceCounts }) => {
   };
 
   return (
-    <div>
+    <div className="w-full">
       <MapContainer
-        style={{ height: "400px", width: "100%" }}
+        className="h-[400px] w-full rounded-lg shadow"
         center={[62.0, -96.0]} // Centered on Canada
         zoom={4}
         scrollWheelZoom={true}
@@ -147,14 +129,7 @@ const Map = ({ provinceCounts }) => {
         )}
       </MapContainer>
       {hoveredProvince && (
-        <div
-          style={{
-            marginTop: "10px",
-            fontSize: "16px",
-            fontWeight: "bold",
-            textAlign: "center",
-          }}
-        >
+        <div className="mt-2 text-lg font-bold text-center">
           Hovering over: {hoveredProvince.name} (Total: {hoveredProvince.frequency})
         </div>
       )}
