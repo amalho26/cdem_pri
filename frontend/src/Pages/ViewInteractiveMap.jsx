@@ -3,6 +3,8 @@ import axios from "axios";
 import Navbar from "../Components/Navbar";
 import Map from "../Components/Map/Map";
 import Modal from "react-modal";
+import backgroundImg from "../Assets/background.png";
+
 
 const ViewInteractiveMapPage = () => {
   const [independentVariables, setIndependentVariables] = useState([]);
@@ -125,11 +127,13 @@ const ViewInteractiveMapPage = () => {
       {/* This container will stretch to fill the screen height */}
       <div className="flex flex-1 h-screen overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-80 bg-gray-50 p-6 border-r border-gray-200 relative">
+        <aside id="sidebar" className="w-80 bg-gray-50 p-6 border-r border-gray-200 relative">
+          <div className="absolute inset-0 opacity-10" style={{backgroundImage: `url(${backgroundImg})`,backgroundSize: "cover",backgroundPosition: "center"}}/>
+          <div className="relative z-10">
           <h1 className="text-2xl font-bold mb-4">View Interactive Map</h1>
           {/* Year Selection */}
           <div className="mb-4">
-            <label className="block mb-2 font-medium">Year</label>
+            <label className="block mb-2  font-bold">Year</label>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
@@ -145,7 +149,7 @@ const ViewInteractiveMapPage = () => {
           </div>
           {/* Independent Variables */}
           <div className="mb-4">
-            <label className="block mb-2 font-medium">Select Independent Variable</label>
+            <label className="block mb-2 font-bold">Select Independent Variable</label>
             <select
               value={selectedIndependent}
               onChange={(e) => setSelectedIndependent(e.target.value)}
@@ -162,7 +166,7 @@ const ViewInteractiveMapPage = () => {
           {/* Filter By */}
           <div className="mb-4">
             <button
-              className="w-full h-12 bg-blue-600 text-white rounded-lg"
+              className="w-full h-12 bg-red-500 text-white rounded-lg"
               onClick={toggleModal}
             >
               Filter By
@@ -206,7 +210,7 @@ const ViewInteractiveMapPage = () => {
           </div>
           {/* Dependent Variables */}
           <div className="mb-4">
-            <label className="block mb-2 font-medium">Select Dependent Variable</label>
+            <label className="block mb-2 font-bold">Select Dependent Variable</label>
             <select
               value={selectedDependent}
               onChange={(e) => setSelectedDependent(e.target.value)}
@@ -219,6 +223,7 @@ const ViewInteractiveMapPage = () => {
                 </option>
               ))}
             </select>
+          </div>
           </div>
         </aside>
 

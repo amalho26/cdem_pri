@@ -21,7 +21,7 @@ const NewsGrid = () => {
     {
       image: 'https://i.pinimg.com/474x/98/a8/04/98a80432aba635248f3c7386410108e2.jpg',
       name: 'Statistical Summary',
-      link: '/demographics',
+      link: '/stats',
     },
   ];
 
