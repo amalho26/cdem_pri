@@ -5,7 +5,6 @@ import Map from "../Components/Map/Map";
 import Modal from "react-modal";
 import backgroundImg from "../Assets/background.png";
 
-
 const ViewInteractiveMapPage = () => {
   const [independentVariables, setIndependentVariables] = useState([]);
   const [dependentVariables, setDependentVariables] = useState([]);
@@ -18,17 +17,19 @@ const ViewInteractiveMapPage = () => {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [provinceCounts, setProvinceCounts] = useState([]);
+  // Add a separate state for riding-level counts
+  const [ridingCounts, setRidingCounts] = useState([]);
   const [sqlData, setSqlData] = useState([]);
+  // New state for toggling view mode
+  const [viewMode, setViewMode] = useState("province");
 
-  // Load questions based on the selected year
+  // Load question definitions for the selected year
   useEffect(() => {
     if (selectedYear) {
       const getIndependentVariables = async () => {
         try {
           const response = await import(`../Data/questions${selectedYear}.json`);
           const data = response.default;
-
-          // Process independent variables
           setIndependentVariables(
             Object.entries(data.independent || {}).map(([key, value]) => ({
               id: key,
@@ -36,8 +37,6 @@ const ViewInteractiveMapPage = () => {
               answersMapping: value.answersMapping,
             }))
           );
-
-          // Process dependent variables
           setDependentVariables(
             Object.entries(data.dependent || {}).map(([key, value]) => ({
               id: key,
@@ -48,7 +47,6 @@ const ViewInteractiveMapPage = () => {
           console.error("Error loading JSON data:", error);
         }
       };
-
       getIndependentVariables();
     } else {
       setIndependentVariables([]);
@@ -56,7 +54,7 @@ const ViewInteractiveMapPage = () => {
     }
   }, [selectedYear]);
 
-  // Update filters based on the selected independent variable
+  // Load the filter options based on the selected Independent Variable
   useEffect(() => {
     if (selectedIndependent) {
       const selectedQuestion = independentVariables.find(
@@ -75,7 +73,7 @@ const ViewInteractiveMapPage = () => {
     }
   }, [selectedIndependent, independentVariables]);
 
-  // Fetch and filter map data
+  // Fetch data from the API, then compute both province-level and riding-level counts
   useEffect(() => {
     if (selectedYear && selectedIndependent) {
       setLoading(true);
@@ -87,28 +85,42 @@ const ViewInteractiveMapPage = () => {
         })
         .then((response) => {
           let filteredData = response.data;
-
-          // If any filters selected, keep only matching rows
           if (selectedFilters && selectedFilters.length > 0) {
             filteredData = filteredData.filter((row) =>
               selectedFilters.includes(row[selectedIndependent])
             );
           }
-
-          // Compute province counts
-          const counts = filteredData.reduce((acc, record) => {
-            const provinceId = record.dc21_province; // Adjust if your column name differs
+          // 1) Province-level frequencies
+          const provinceFrequency = filteredData.reduce((acc, record) => {
+            const provinceId = record.dc21_province; // e.g. 1, 2, 3...
             acc[provinceId] = (acc[provinceId] || 0) + 1;
             return acc;
           }, {});
-
-          const formattedCounts = Object.entries(counts).map(([province, count]) => ({
-            province: Number(province),
-            count,
-          }));
+          const formattedProvinceCounts = Object.entries(provinceFrequency).map(
+            ([province, count]) => ({
+              province: Number(province),
+              count,
+            })
+          );
+          // 2) Riding-level frequencies
+          const ridingFrequency = filteredData.reduce((acc, record) => {
+            const feduid = record.feduid; // <--- Make sure this column name matches your DB
+            if (feduid) {
+              acc[feduid] = (acc[feduid] || 0) + 1;
+            }
+            return acc;
+          }, {});
+          const formattedRidingCounts = Object.entries(ridingFrequency).map(
+            ([riding, count]) => ({
+              riding: Number(riding),
+              count,
+            })
+          );
 
           setMapData(filteredData);
-          setProvinceCounts(formattedCounts);
+          setProvinceCounts(formattedProvinceCounts);
+          setRidingCounts(formattedRidingCounts);
+          console.log(formattedRidingCounts);
         })
         .catch((error) => {
           console.error("Error fetching map data:", error);
@@ -117,116 +129,133 @@ const ViewInteractiveMapPage = () => {
           setLoading(false);
         });
     }
-  }, [selectedYear, selectedIndependent, selectedDependent, selectedFilters]);
+  }, [selectedYear, selectedIndependent, selectedDependent, selectedFilters, viewMode]);
 
+  // Modal toggle
   const toggleModal = () => setIsModalOpen(!isModalOpen);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      {/* This container will stretch to fill the screen height */}
       <div className="flex flex-1 h-screen overflow-hidden">
-        {/* Sidebar */}
         <aside id="sidebar" className="w-80 bg-gray-50 p-6 border-r border-gray-200 relative">
-          <div className="absolute inset-0 opacity-10" style={{backgroundImage: `url(${backgroundImg})`,backgroundSize: "cover",backgroundPosition: "center"}}/>
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: `url(${backgroundImg})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
           <div className="relative z-10">
-          <h1 className="text-2xl font-bold mb-4">View Interactive Map</h1>
-          {/* Year Selection */}
-          <div className="mb-4">
-            <label className="block mb-2  font-bold">Year</label>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full h-12 bg-gray-100 rounded-lg p-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select Year</option>
-              {[2019, 2020, 2021, 2022, 2023, 2024].map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* Independent Variables */}
-          <div className="mb-4">
-            <label className="block mb-2 font-bold">Select Independent Variable</label>
-            <select
-              value={selectedIndependent}
-              onChange={(e) => setSelectedIndependent(e.target.value)}
-              className="w-full h-12 bg-gray-100 rounded-lg p-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select Independent Variable</option>
-              {independentVariables.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.mainQuestion}
-                </option>
-              ))}
-            </select>
-          </div>
-          {/* Filter By */}
-          <div className="mb-4">
-            <button
-              className="w-full h-12 bg-red-500 text-white rounded-lg"
-              onClick={toggleModal}
-            >
-              Filter By
-            </button>
-            <Modal
-              isOpen={isModalOpen}
-              onRequestClose={toggleModal}
-              parentSelector={() => document.getElementById("sidebar")}
-              className="bg-white p-6 rounded-lg max-w-lg mx-auto relative z-50"
-              overlayClassName="absolute inset-0 bg-black bg-opacity-50 z-40"
-              ariaHideApp={false}
-            >
-              <h2 className="font-bold text-lg mb-4">Select Filters</h2>
+            <h1 className="text-2xl font-bold mb-4">View Interactive Map</h1>
+            {/* Year Selection */}
+            <div className="mb-4">
+              <label className="block mb-2 font-bold">Year</label>
               <select
-                multiple
-                value={selectedFilters}
-                onChange={(e) =>
-                  setSelectedFilters(
-                    Array.from(e.target.options)
-                      .filter((option) => option.selected)
-                      .map((option) => option.value)
-                  )
-                }
-                className="w-full h-40 bg-gray-100 rounded-lg p-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full h-12 bg-gray-100 rounded-lg p-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {filters.map((filter) => (
-                  <option key={filter.id} value={filter.id}>
-                    {filter.display}
+                <option value="">Select Year</option>
+                {[2019, 2020, 2021, 2022, 2023, 2024].map((year) => (
+                  <option key={year} value={year}>
+                    {year}
                   </option>
                 ))}
               </select>
-              <div className="flex justify-end mt-4">
-                <button
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg"
-                  onClick={toggleModal}
+            </div>
+            {/* View Mode Selection */}
+            <div className="mb-4">
+              <label className="block mb-2 font-bold">View Mode</label>
+              <select
+                value={viewMode}
+                onChange={(e) => setViewMode(e.target.value)}
+                className="w-full h-12 bg-gray-100 rounded-lg p-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="province">Province/Territory</option>
+                <option value="riding">Riding</option>
+              </select>
+            </div>
+            {/* Independent Variables */}
+            <div className="mb-4">
+              <label className="block mb-2 font-bold">Select Independent Variable</label>
+              <select
+                value={selectedIndependent}
+                onChange={(e) => setSelectedIndependent(e.target.value)}
+                className="w-full h-12 bg-gray-100 rounded-lg p-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Independent Variable</option>
+                {independentVariables.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.mainQuestion}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Filter By */}
+            <div className="mb-4">
+              <button
+                className="w-full h-12 bg-red-500 text-white rounded-lg"
+                onClick={toggleModal}
+              >
+                Filter By
+              </button>
+              <Modal
+                isOpen={isModalOpen}
+                onRequestClose={toggleModal}
+                parentSelector={() => document.getElementById("sidebar")}
+                className="bg-white p-6 rounded-lg max-w-lg mx-auto relative z-50"
+                overlayClassName="absolute inset-0 bg-black bg-opacity-50 z-40"
+                ariaHideApp={false}
+              >
+                <h2 className="font-bold text-lg mb-4">Select Filters</h2>
+                <select
+                  multiple
+                  value={selectedFilters}
+                  onChange={(e) =>
+                    setSelectedFilters(
+                      Array.from(e.target.options)
+                        .filter((option) => option.selected)
+                        .map((option) => option.value)
+                    )
+                  }
+                  className="w-full h-40 bg-gray-100 rounded-lg p-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  Apply Filters
-                </button>
-              </div>
-            </Modal>
-          </div>
-          {/* Dependent Variables */}
-          <div className="mb-4">
-            <label className="block mb-2 font-bold">Select Dependent Variable</label>
-            <select
-              value={selectedDependent}
-              onChange={(e) => setSelectedDependent(e.target.value)}
-              className="w-full h-12 bg-gray-100 rounded-lg p-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select Dependent Variable</option>
-              {dependentVariables.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.mainQuestion}
-                </option>
-              ))}
-            </select>
-          </div>
+                  {filters.map((filter) => (
+                    <option key={filter.id} value={filter.id}>
+                      {filter.display}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex justify-end mt-4">
+                  <button
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg"
+                    onClick={toggleModal}
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </Modal>
+            </div>
+            {/* Dependent Variables */}
+            <div className="mb-4">
+              <label className="block mb-2 font-bold">Select Dependent Variable</label>
+              <select
+                value={selectedDependent}
+                onChange={(e) => setSelectedDependent(e.target.value)}
+                className="w-full h-12 bg-gray-100 rounded-lg p-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Dependent Variable</option>
+                {dependentVariables.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.mainQuestion}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </aside>
-
         {/* Main Map Area */}
         <main className="flex-1 relative">
           {loading ? (
@@ -234,9 +263,13 @@ const ViewInteractiveMapPage = () => {
               <p className="text-lg font-semibold">Loading...</p>
             </div>
           ) : (
-            // The Map component now fills all available space
             <div className="w-full h-full">
-              <Map provinceCounts={provinceCounts} />
+              {/* Pass both provinceCounts and ridingCounts to the Map */}
+              <Map
+                provinceCounts={provinceCounts}
+                ridingCounts={ridingCounts}
+                viewMode={viewMode}
+              />
             </div>
           )}
         </main>

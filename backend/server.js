@@ -1,5 +1,4 @@
 const express = require('express');
-const connection = require("./db/connection"); // Import the DB connection
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const apiRoutes = require('./routes/api'); 

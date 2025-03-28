@@ -40,9 +40,7 @@ const ChartForm = () => {
     if (selectedYear) {
       axios
         .get("http://localhost:5001/api/all_data", {
-          headers: {
-            db: `${selectedYear}_democracy_checkup`,
-          },
+          headers: { db: `${selectedYear}_democracy_checkup` },
         })
         .then((response) => {
           setSqlData(response.data);
@@ -139,45 +137,69 @@ const ChartForm = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-  // Generate graph data
-  const generateGraph = () => {
-    try {
-      if (!sqlData || sqlData.length === 0) {
-        console.error("No data available to generate graph.");
-        return;
-      }
-
-      // Filter data based on selected filters
-      let filteredData = [...sqlData];
-      if (selectedFilters && selectedFilters.length > 0) {
-        filteredData = filteredData.filter((row) =>
-          selectedFilters.includes(row[selectedIndependent])
-        );
-      }
-
-      const selectedData = filteredData.map((row) => ({
-        independent: row[selectedIndependent],
-        dependent: row[selectedDependent],
-      }));
-
-      // Count frequencies of dependent values
-      const frequencyMap = selectedData.reduce((acc, row) => {
-        const value = row.dependent;
-        acc[value] = (acc[value] || 0) + 1;
-        return acc;
-      }, {});
-
-      // Format graph data
-      const formattedData = Object.entries(frequencyMap).map(([key, count]) => ({
-        dependent: dependentAnswerMapping[key]?.Display || `Value ${key}`,
-        frequency: count,
-      }));
-
-      setGraphData(formattedData);
-    } catch (error) {
-      console.error("Error generating graph:", error);
+  // Custom tooltip for the Bar Chart
+  const renderCustomBarTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div
+          style={{
+            backgroundColor: "#fff",
+            border: "1px solid #ccc",
+            padding: 10,
+          }}
+        >
+          <p>{`${label} : Count ${payload[0].value}`}</p>
+        </div>
+      );
     }
+    return null;
   };
+
+  // Generate graph data using "count" instead of "frequency"
+const generateGraph = () => {
+  try {
+    if (!sqlData || sqlData.length === 0) {
+      console.error("No data available to generate graph.");
+      return;
+    }
+
+    // 1. Filter data based on selected filters
+    let filteredData = [...sqlData];
+    if (selectedFilters && selectedFilters.length > 0) {
+      filteredData = filteredData.filter((row) =>
+        selectedFilters.includes(row[selectedIndependent])
+      );
+    }
+
+    // 2. Filter out any rows where the dependent variable is -99
+    filteredData = filteredData.filter(
+      (row) => row[selectedDependent] !== -99 && row[selectedDependent] !== "-99"
+    );
+
+    const selectedData = filteredData.map((row) => ({
+      independent: row[selectedIndependent],
+      dependent: row[selectedDependent],
+    }));
+
+    // 3. Count frequencies and rename property to "count"
+    const frequencyMap = selectedData.reduce((acc, row) => {
+      const value = row.dependent;
+      acc[value] = (acc[value] || 0) + 1;
+      return acc;
+    }, {});
+
+    // 4. Build the data for your chart
+    const formattedData = Object.entries(frequencyMap).map(([key, count]) => ({
+      dependent: dependentAnswerMapping[key]?.Display || `Value ${key}`,
+      count: count,
+    }));
+
+    setGraphData(formattedData);
+  } catch (error) {
+    console.error("Error generating graph:", error);
+  }
+};
+
 
   // Export chart as PDF
   const exportToPDF = () => {
@@ -250,7 +272,6 @@ const ChartForm = () => {
               Filter By
             </button>
 
-            {/* Modal (ensure high z-index) */}
             <Modal
               isOpen={isModalOpen}
               onRequestClose={toggleModal}
@@ -338,7 +359,6 @@ const ChartForm = () => {
 
         {/* Buttons Row */}
         <div className="flex items-center space-x-4 mt-4">
-          {/** Generate Graph (only if form is complete) */}
           {isFormComplete && (
             <button
               className="flex-1 h-14 bg-[#ff0000] text-white rounded-xl text-lg font-bold"
@@ -348,7 +368,6 @@ const ChartForm = () => {
             </button>
           )}
 
-          {/** Export PDF (only if a chart is generated) */}
           {graphData.length > 0 && (
             <button
               className="flex-1 h-14 bg-[#ff0000] text-white rounded-xl text-lg font-bold"
@@ -376,30 +395,37 @@ const ChartForm = () => {
                   height={500}
                   data={graphData}
                   margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                  barCategoryGap={0}
+                  barGap={0}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="dependent"
+                    type="category"
+                    scale="band"
                     tick={{ angle: -90, textAnchor: "end" }}
                     interval={0}
                     height={100}
                     label={{
                       value: "Dependent Variable",
-                      position: "insideBottom",
-                      offset: -50,
+                      position: "bottom",
+                      offset: 20,
                     }}
                   />
                   <YAxis
                     label={{
-                      value: "Frequency",
+                      value: "Count",
                       angle: -90,
                       position: "insideLeft",
                       offset: 10,
                     }}
                   />
-                  <Tooltip />
+                  <Tooltip
+                    content={renderCustomBarTooltip}
+                    cursor={{ fill: "rgba(196,196,196,0.3)" }}
+                  />
                   <Legend />
-                  <Bar dataKey="frequency" fill="#8884d8" />
+                  <Bar dataKey="count" fill="#8884d8" barSize={40} />
                 </BarChart>
               </div>
             )}
@@ -407,14 +433,18 @@ const ChartForm = () => {
             {/* Pie Chart */}
             {chartType === "Pie" && (
               <div className="flex justify-center">
-                <PieChart width={500} height={500}>
+                <PieChart
+                  width={500}
+                  height={400}
+                  margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+                >
                   <Pie
                     data={graphData}
-                    dataKey="frequency"
+                    dataKey="count"
                     nameKey="dependent"
                     cx="50%"
-                    cy="50%"
-                    outerRadius={180}
+                    cy="45%"
+                    outerRadius={120}
                     fill="#8884d8"
                     label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
                   >
@@ -425,6 +455,27 @@ const ChartForm = () => {
                       />
                     ))}
                   </Pie>
+                  <Legend
+                    layout="horizontal"
+                    verticalAlign="bottom"
+                    align="center"
+                    wrapperStyle={{
+                      // Make the legend a flex container that can wrap
+                      display: "flex",
+                      flexWrap: "wrap",
+                      justifyContent: "center",
+
+                      border: "1px solid #ccc",
+                      borderRadius: "5px",
+                      padding: "10px",
+                      marginTop: "20px",
+                      backgroundColor: "#fff",
+
+                      // Ensures the legend does not exceed chart width
+                      width: "90%",
+                      margin: "0 auto",
+                    }}
+                  />
                   <Tooltip />
                 </PieChart>
               </div>
@@ -447,21 +498,22 @@ const ChartForm = () => {
                     height={100}
                     label={{
                       value: "Dependent Variable",
-                      position: "insideBottom",
-                      offset: -50,
+                      position: "bottom",
+                      offset: 20,
                     }}
                   />
                   <YAxis
                     type="number"
-                    dataKey="frequency"
+                    dataKey="count"
                     label={{
-                      value: "Frequency",
+                      value: "Count",
                       angle: -90,
                       position: "insideLeft",
                       offset: 10,
                     }}
                   />
                   <Tooltip />
+                  <Legend />
                   <Scatter data={graphData} fill="#8884d8" />
                 </ScatterChart>
               </div>
