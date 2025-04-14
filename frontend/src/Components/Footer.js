@@ -12,7 +12,6 @@ const Footer = () => {
           <p className="text-sm">Follow us:</p>
           <div className="space-x-4">
             <a href="https://x.com" className="text-gray-400 hover:text-white">X</a>
-            {/* Add more social links as needed */}
           </div>
         </div>
       </div>
