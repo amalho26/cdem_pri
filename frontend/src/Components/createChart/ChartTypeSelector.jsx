@@ -1,7 +1,7 @@
 import React from "react";
 
 const ChartTypeSelector = ({ setChartType }) => {
-  const chartTypes = ["Bar", "Scatter", "Pie"];
+  const chartTypes = ["Bar", "Pie"];
 
   const handleChartTypeChange = (e) => {
     setChartType(e.target.value);

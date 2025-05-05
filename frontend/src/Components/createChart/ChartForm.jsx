@@ -1,20 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Modal from "react-modal";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend,
-  Scatter,
-  ScatterChart,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import {BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, PieChart, Pie, Cell} from "recharts";
 import ChartTypeSelector from "./ChartTypeSelector";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
@@ -35,15 +22,15 @@ const ChartForm = () => {
   const [sqlData, setSqlData] = useState([]);
   const isFormComplete = selectedYear && selectedDependent && chartType && graphTitle;
 
-  // Fetch data from DB
   useEffect(() => {
     if (selectedYear) {
       axios
-        .get("http://localhost:5001/api/all_data", {
+        .get("http://3.96.189.26:5001/api/all_data", {
           headers: { db: `${selectedYear}_democracy_checkup` },
         })
         .then((response) => {
           setSqlData(response.data);
+          console.log("SQL Data:", response.data);
         })
         .catch((err) => {
           console.error("Error:", err);
@@ -51,7 +38,7 @@ const ChartForm = () => {
     }
   }, [selectedYear]);
 
-  // Fetch question data
+  //questions
   useEffect(() => {
     if (selectedYear) {
       const fetchData = async () => {
@@ -89,7 +76,7 @@ const ChartForm = () => {
     }
   }, [selectedYear]);
 
-  // Update filter options when Independent Variable changes
+  //filter updates
   useEffect(() => {
     if (selectedIndependent) {
       const selectedQuestion = independentVariables.find(
@@ -111,7 +98,6 @@ const ChartForm = () => {
     }
   }, [selectedIndependent, independentVariables]);
 
-  // Update dependent answer mapping
   useEffect(() => {
     const selectedDependentQuestion = dependentVariables.find(
       (item) => item.id === selectedDependent
@@ -123,7 +109,7 @@ const ChartForm = () => {
     }
   }, [selectedDependent, dependentVariables]);
 
-  // Handle filter selection
+  //filters
   const handleFilterChange = (e) => {
     const { options } = e.target;
     const selectedValues = Array.from(options)
@@ -132,22 +118,14 @@ const ChartForm = () => {
     setSelectedFilters(selectedValues);
   };
 
-  // Toggle modal for filters
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-  // Custom tooltip for the Bar Chart
   const renderCustomBarTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div
-          style={{
-            backgroundColor: "#fff",
-            border: "1px solid #ccc",
-            padding: 10,
-          }}
-        >
+        <div style={{backgroundColor: "#fff", border: "1px solid #ccc", padding: 10,}}>
           <p>{`${label} : Count ${payload[0].value}`}</p>
         </div>
       );
@@ -155,7 +133,7 @@ const ChartForm = () => {
     return null;
   };
 
-  // Generate graph data using "count" instead of "frequency"
+  //graph data
 const generateGraph = () => {
   try {
     if (!sqlData || sqlData.length === 0) {
@@ -163,7 +141,6 @@ const generateGraph = () => {
       return;
     }
 
-    // 1. Filter data based on selected filters
     let filteredData = [...sqlData];
     if (selectedFilters && selectedFilters.length > 0) {
       filteredData = filteredData.filter((row) =>
@@ -171,7 +148,7 @@ const generateGraph = () => {
       );
     }
 
-    // 2. Filter out any rows where the dependent variable is -99
+    //filter out -99
     filteredData = filteredData.filter(
       (row) => row[selectedDependent] !== -99 && row[selectedDependent] !== "-99"
     );
@@ -181,14 +158,12 @@ const generateGraph = () => {
       dependent: row[selectedDependent],
     }));
 
-    // 3. Count frequencies and rename property to "count"
     const frequencyMap = selectedData.reduce((acc, row) => {
       const value = row.dependent;
       acc[value] = (acc[value] || 0) + 1;
       return acc;
     }, {});
 
-    // 4. Build the data for your chart
     const formattedData = Object.entries(frequencyMap).map(([key, count]) => ({
       dependent: dependentAnswerMapping[key]?.Display || `Value ${key}`,
       count: count,
@@ -201,7 +176,7 @@ const generateGraph = () => {
 };
 
 
-  // Export chart as PDF
+  //export pdf
   const exportToPDF = () => {
     const input = document.getElementById("graph-container");
     html2canvas(input).then((canvas) => {
@@ -215,13 +190,11 @@ const generateGraph = () => {
 
   return (
     <div className="px-4 py-3 flex flex-col md:flex-row gap-8">
-      {/* Left Column: Form */}
       <div className="md:w-1/2">
         <h1 className="text-[#181010] text-2xl font-bold mb-4 text-center">
           Create a New Chart
         </h1>
 
-        {/* Year Selection */}
         <div className="mb-4">
           <label className="flex flex-col">
             <p className="text-[#181010] text-base font-medium mb-2">Year</p>
@@ -241,7 +214,6 @@ const generateGraph = () => {
           </label>
         </div>
 
-        {/* Independent Variable */}
         <div className="mb-4">
           <label className="flex flex-col">
             <p className="text-[#181010] text-base font-medium mb-2">
@@ -262,13 +234,9 @@ const generateGraph = () => {
           </label>
         </div>
 
-        {/* Filters */}
         {filters.length > 0 && (
           <div className="mb-4">
-            <button
-              className="w-full h-14 bg-[#f5f0f0] text-[#181010] rounded-xl text-base font-medium"
-              onClick={toggleModal}
-            >
+            <button className="w-full h-14 bg-[#f5f0f0] text-[#181010] rounded-xl text-base font-medium" onClick={toggleModal}>
               Filter By
             </button>
 
@@ -283,12 +251,7 @@ const generateGraph = () => {
               <h2 className="text-lg font-bold mb-4">Select Filters</h2>
               <div className="mb-4">
                 <label className="flex flex-col">
-                  <select
-                    multiple
-                    value={selectedFilters}
-                    onChange={handleFilterChange}
-                    className="w-full h-40 rounded-xl bg-[#f5f0f0] p-4 text-base"
-                  >
+                  <select multiple value={selectedFilters} onChange={handleFilterChange} className="w-full h-40 rounded-xl bg-[#f5f0f0] p-4 text-base">
                     {filters.map((filter) => (
                       <option key={filter.id} value={filter.id}>
                         {filter.display}
@@ -298,16 +261,10 @@ const generateGraph = () => {
                 </label>
               </div>
               <div className="flex justify-end gap-4">
-                <button
-                  className="bg-gray-300 px-4 py-2 rounded-lg"
-                  onClick={toggleModal}
-                >
+                <button className="bg-gray-300 px-4 py-2 rounded-lg" onClick={toggleModal}>
                   Cancel
                 </button>
-                <button
-                  className="bg-[#ff0000] text-white px-4 py-2 rounded-lg"
-                  onClick={toggleModal}
-                >
+                <button className="bg-[#ff0000] text-white px-4 py-2 rounded-lg" onClick={toggleModal}>
                   Apply Filters
                 </button>
               </div>
@@ -315,7 +272,6 @@ const generateGraph = () => {
           </div>
         )}
 
-        {/* Dependent Variable */}
         <div className="mb-4">
           <label className="flex flex-col">
             <p className="text-[#181010] text-base font-medium mb-2">
@@ -336,12 +292,10 @@ const generateGraph = () => {
           </label>
         </div>
 
-        {/* Chart Type Selector */}
         <div className="mb-4">
           <ChartTypeSelector setChartType={setChartType} />
         </div>
 
-        {/* Graph Title */}
         <div className="mb-4">
           <label className="flex flex-col">
             <p className="text-[#181010] text-base font-medium mb-2">
@@ -357,29 +311,21 @@ const generateGraph = () => {
           </label>
         </div>
 
-        {/* Buttons Row */}
         <div className="flex items-center space-x-4 mt-4">
           {isFormComplete && (
-            <button
-              className="flex-1 h-14 bg-[#ff0000] text-white rounded-xl text-lg font-bold"
-              onClick={generateGraph}
-            >
+            <button className="flex-1 h-14 bg-[#ff0000] text-white rounded-xl text-lg font-bold" onClick={generateGraph}>
               Generate Graph
             </button>
           )}
 
           {graphData.length > 0 && (
-            <button
-              className="flex-1 h-14 bg-[#ff0000] text-white rounded-xl text-lg font-bold"
-              onClick={exportToPDF}
-            >
+            <button className="flex-1 h-14 bg-[#ff0000] text-white rounded-xl text-lg font-bold" onClick={exportToPDF}>
               Export Chart as PDF
             </button>
           )}
         </div>
       </div>
 
-      {/* Right Column: Chart */}
       <div className="md:w-1/2 bg-white shadow-md rounded-lg p-6 flex flex-col items-center">
         {graphData.length > 0 ? (
           <div id="graph-container" className="w-full">
@@ -387,17 +333,9 @@ const generateGraph = () => {
               {graphTitle}
             </h2>
 
-            {/* Bar Chart */}
             {chartType === "Bar" && (
               <div className="flex justify-center">
-                <BarChart
-                  width={700}
-                  height={500}
-                  data={graphData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
-                  barCategoryGap={0}
-                  barGap={0}
-                >
+                <BarChart width={700} height={500} data={graphData} margin={{ top: 20, right: 30, left: 20, bottom: 80 }}  barGap={0}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="dependent"
@@ -420,39 +358,19 @@ const generateGraph = () => {
                       offset: 10,
                     }}
                   />
-                  <Tooltip
-                    content={renderCustomBarTooltip}
-                    cursor={{ fill: "rgba(196,196,196,0.3)" }}
-                  />
+                  <Tooltip content={renderCustomBarTooltip} cursor={{ fill: "rgba(196,196,196,0.3)" }}/>
                   <Legend />
                   <Bar dataKey="count" fill="#8884d8" barSize={40} />
                 </BarChart>
               </div>
             )}
 
-            {/* Pie Chart */}
             {chartType === "Pie" && (
               <div className="flex justify-center">
-                <PieChart
-                  width={500}
-                  height={400}
-                  margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
-                >
-                  <Pie
-                    data={graphData}
-                    dataKey="count"
-                    nameKey="dependent"
-                    cx="50%"
-                    cy="45%"
-                    outerRadius={120}
-                    fill="#8884d8"
-                    label={({ percent }) => `${(percent * 100).toFixed(1)}%`}
-                  >
+                <PieChart width={500} height={400} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
+                  <Pie data={graphData} dataKey="count" nameKey="dependent" cx="50%" cy="45%" outerRadius={120} fill="#8884d8" label={({ percent }) => `${(percent * 100).toFixed(1)}%`}>
                     {graphData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={`hsl(${index * 50}, 70%, 50%)`}
-                      />
+                      <Cell key={`cell-${index}`} fill={`hsl(${index * 50}, 70%, 50%)`} />
                     ))}
                   </Pie>
                   <Legend
@@ -460,62 +378,20 @@ const generateGraph = () => {
                     verticalAlign="bottom"
                     align="center"
                     wrapperStyle={{
-                      // Make the legend a flex container that can wrap
                       display: "flex",
                       flexWrap: "wrap",
                       justifyContent: "center",
-
                       border: "1px solid #ccc",
                       borderRadius: "5px",
                       padding: "10px",
                       marginTop: "20px",
                       backgroundColor: "#fff",
-
-                      // Ensures the legend does not exceed chart width
                       width: "90%",
                       margin: "0 auto",
                     }}
                   />
                   <Tooltip />
                 </PieChart>
-              </div>
-            )}
-
-            {/* Scatter Chart */}
-            {chartType === "Scatter" && (
-              <div className="flex justify-center">
-                <ScatterChart
-                  width={700}
-                  height={500}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
-                >
-                  <CartesianGrid />
-                  <XAxis
-                    type="category"
-                    dataKey="dependent"
-                    tick={{ angle: -90, textAnchor: "end" }}
-                    interval={0}
-                    height={100}
-                    label={{
-                      value: "Dependent Variable",
-                      position: "bottom",
-                      offset: 20,
-                    }}
-                  />
-                  <YAxis
-                    type="number"
-                    dataKey="count"
-                    label={{
-                      value: "Count",
-                      angle: -90,
-                      position: "insideLeft",
-                      offset: 10,
-                    }}
-                  />
-                  <Tooltip />
-                  <Legend />
-                  <Scatter data={graphData} fill="#8884d8" />
-                </ScatterChart>
               </div>
             )}
           </div>

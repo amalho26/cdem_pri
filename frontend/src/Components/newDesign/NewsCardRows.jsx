@@ -1,12 +1,7 @@
 import React from 'react';
 import NewsCard from './NewsCard';
 
-const newsItems = [
-  { id: 1, name: 'News 1', link: '#' },
-  { id: 2, name: 'News 2', link: '#' },
-  { id: 3, name: 'News 3', link: '#' },
-  { id: 4, name: 'News 4', link: '#' },
-];
+const newsItems = [{}];
 
 const NewsCardsRow = () => {
   return (

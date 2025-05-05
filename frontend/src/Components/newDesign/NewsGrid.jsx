@@ -19,7 +19,7 @@ const NewsGrid = () => {
       link: '/export',
     },
     {
-      image: 'https://i.pinimg.com/474x/98/a8/04/98a80432aba635248f3c7386410108e2.jpg',
+      image: 'https://www.freeiconspng.com/uploads/statistic-icon-0.png',
       name: 'Statistical Summary',
       link: '/stats',
     },

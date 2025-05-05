@@ -18,13 +18,12 @@ const provinceIdToName = {
   13: "Yukon",
 };
 
-// Reverse map for easy lookup from province name to ID
 const provinceNameToId = Object.entries(provinceIdToName).reduce(
   (acc, [id, name]) => ({ ...acc, [name]: parseInt(id) }),
   {}
 );
 
-// Color function for provinces/territories (original thresholds)
+//frequency colors
 const getColorProvince = (frequency) => {
   return frequency > 1000
     ? "#800026"
@@ -43,7 +42,6 @@ const getColorProvince = (frequency) => {
     : "#FFEDA0";
 };
 
-// Color function for ridings (new thresholds)
 const getColorRiding = (frequency) => {
   return frequency > 100
     ? "#800026"
@@ -70,11 +68,8 @@ const highlightStyle = {
 };
 
 /**
- * Extracts the FEDNUM (riding id) from an HTML description string.
- * This function uses DOMParser to avoid hard-coded string offsets.
- *
- * @param {string} description - The HTML string containing the riding details.
- * @returns {number|null} - The extracted riding id, or null if not found.
+ * @param {string} description -contains riding details
+ * @returns {number|null} -riding id
  */
 const getFeduidFromDescription = (description) => {
   if (!description) return null;
@@ -94,7 +89,7 @@ const getFeduidFromDescription = (description) => {
 const Map = ({ provinceCounts, ridingCounts, viewMode }) => {
   const [geoJsonData, setGeoJsonData] = useState(null);
 
-  // Fetch either province or riding GeoJSON depending on viewMode
+//fetching data
   useEffect(() => {
     const fetchGeoJson = async () => {
       try {
@@ -115,13 +110,14 @@ const Map = ({ provinceCounts, ridingCounts, viewMode }) => {
     fetchGeoJson();
   }, [viewMode]);
 
-  // Style each feature depending on whether it's province or riding
+  //by province or riding
   const styleFeature = (feature) => {
     if (viewMode === "province") {
       const provinceName = feature.properties.prov_name_en;
       const provinceId = provinceNameToId[provinceName];
-      const frequency =
-        provinceCounts.find((entry) => entry.province === provinceId)?.count || 0;
+      console.log("Province ID:", provinceId);
+      console.log("Province Counts:", provinceCounts);
+      const frequency = provinceCounts.find((entry) => entry.province === provinceId)?.count || 0;
       return {
         weight: 1,
         color: "#3388ff",
@@ -144,20 +140,19 @@ const Map = ({ provinceCounts, ridingCounts, viewMode }) => {
     }
   };
 
-  // Hover highlight
+  //hovering
   const highlightFeature = (e) => {
     const layer = e.target;
     layer.setStyle(highlightStyle);
     layer.bringToFront();
   };
 
-  // Reset highlight on mouse out
   const resetHighlight = (e) => {
     const layer = e.target;
     layer.setStyle(styleFeature(layer.feature));
   };
 
-  // Tooltip content differs by viewMode
+  //based on province/region
   const onEachFeature = (feature, layer) => {
     if (viewMode === "province") {
       const provinceName = feature.properties.prov_name_en;
@@ -190,12 +185,12 @@ const Map = ({ provinceCounts, ridingCounts, viewMode }) => {
     <div className="w-full h-full">
       <MapContainer
         className="h-full w-full"
-        center={[62.0, -96.0]} // Centered on Canada
+        center={[62.0, -96.0]} 
         zoom={4}
         scrollWheelZoom={true}
       >
         <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
+          attribution="&copy;"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {geoJsonData && (

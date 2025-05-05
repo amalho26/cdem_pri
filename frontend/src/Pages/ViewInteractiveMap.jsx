@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import Navbar from "../Components/Navbar";
+import Navbar from "../Components/Common/Navbar";
 import Map from "../Components/Map/Map";
 import Modal from "react-modal";
-import backgroundImg from "../Assets/background.png";
+import backgroundImg from "../Assets/Images/background.png";
 
 const ViewInteractiveMapPage = () => {
   const [independentVariables, setIndependentVariables] = useState([]);
@@ -17,13 +17,9 @@ const ViewInteractiveMapPage = () => {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [provinceCounts, setProvinceCounts] = useState([]);
-  // Add a separate state for riding-level counts
   const [ridingCounts, setRidingCounts] = useState([]);
-  const [sqlData, setSqlData] = useState([]);
-  // New state for toggling view mode
   const [viewMode, setViewMode] = useState("province");
 
-  // Load question definitions for the selected year
   useEffect(() => {
     if (selectedYear) {
       const getIndependentVariables = async () => {
@@ -54,7 +50,6 @@ const ViewInteractiveMapPage = () => {
     }
   }, [selectedYear]);
 
-  // Load the filter options based on the selected Independent Variable
   useEffect(() => {
     if (selectedIndependent) {
       const selectedQuestion = independentVariables.find(
@@ -73,26 +68,25 @@ const ViewInteractiveMapPage = () => {
     }
   }, [selectedIndependent, independentVariables]);
 
-  // Fetch data from the API, then compute both province-level and riding-level counts
   useEffect(() => {
     if (selectedYear && selectedIndependent) {
       setLoading(true);
       axios
-        .get("http://localhost:5001/api/all_data", {
+        .get("http://3.96.189.26:5001/api/all_data", {
           headers: {
             db: `${selectedYear}_democracy_checkup`,
           },
         })
         .then((response) => {
           let filteredData = response.data;
+          console.log("Filtered Data:", filteredData);
           if (selectedFilters && selectedFilters.length > 0) {
             filteredData = filteredData.filter((row) =>
               selectedFilters.includes(row[selectedIndependent])
             );
           }
-          // 1) Province-level frequencies
           const provinceFrequency = filteredData.reduce((acc, record) => {
-            const provinceId = record.dc21_province; // e.g. 1, 2, 3...
+            const provinceId = record.dc21_province; 
             acc[provinceId] = (acc[provinceId] || 0) + 1;
             return acc;
           }, {});
@@ -102,9 +96,9 @@ const ViewInteractiveMapPage = () => {
               count,
             })
           );
-          // 2) Riding-level frequencies
+
           const ridingFrequency = filteredData.reduce((acc, record) => {
-            const feduid = record.feduid; // <--- Make sure this column name matches your DB
+            const feduid = record.feduid; 
             if (feduid) {
               acc[feduid] = (acc[feduid] || 0) + 1;
             }
@@ -123,7 +117,7 @@ const ViewInteractiveMapPage = () => {
           console.log(formattedRidingCounts);
         })
         .catch((error) => {
-          console.error("Error fetching map data:", error);
+          console.error("Error fetching data:", error);
         })
         .finally(() => {
           setLoading(false);
@@ -131,7 +125,6 @@ const ViewInteractiveMapPage = () => {
     }
   }, [selectedYear, selectedIndependent, selectedDependent, selectedFilters, viewMode]);
 
-  // Modal toggle
   const toggleModal = () => setIsModalOpen(!isModalOpen);
 
   return (
@@ -139,17 +132,9 @@ const ViewInteractiveMapPage = () => {
       <Navbar />
       <div className="flex flex-1 h-screen overflow-hidden">
         <aside id="sidebar" className="w-80 bg-gray-50 p-6 border-r border-gray-200 relative">
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage: `url(${backgroundImg})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          />
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `url(${backgroundImg})`, backgroundSize: "cover", backgroundPosition: "center" }}/>
           <div className="relative z-10">
             <h1 className="text-2xl font-bold mb-4">View Interactive Map</h1>
-            {/* Year Selection */}
             <div className="mb-4">
               <label className="block mb-2 font-bold">Year</label>
               <select
@@ -165,7 +150,6 @@ const ViewInteractiveMapPage = () => {
                 ))}
               </select>
             </div>
-            {/* View Mode Selection */}
             <div className="mb-4">
               <label className="block mb-2 font-bold">View Mode</label>
               <select
@@ -177,7 +161,6 @@ const ViewInteractiveMapPage = () => {
                 <option value="riding">Riding</option>
               </select>
             </div>
-            {/* Independent Variables */}
             <div className="mb-4">
               <label className="block mb-2 font-bold">Select Independent Variable</label>
               <select
@@ -193,7 +176,6 @@ const ViewInteractiveMapPage = () => {
                 ))}
               </select>
             </div>
-            {/* Filter By */}
             <div className="mb-4">
               <button
                 className="w-full h-12 bg-red-500 text-white rounded-lg"
@@ -238,7 +220,6 @@ const ViewInteractiveMapPage = () => {
                 </div>
               </Modal>
             </div>
-            {/* Dependent Variables */}
             <div className="mb-4">
               <label className="block mb-2 font-bold">Select Dependent Variable</label>
               <select
@@ -256,7 +237,6 @@ const ViewInteractiveMapPage = () => {
             </div>
           </div>
         </aside>
-        {/* Main Map Area */}
         <main className="flex-1 relative">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -264,12 +244,7 @@ const ViewInteractiveMapPage = () => {
             </div>
           ) : (
             <div className="w-full h-full">
-              {/* Pass both provinceCounts and ridingCounts to the Map */}
-              <Map
-                provinceCounts={provinceCounts}
-                ridingCounts={ridingCounts}
-                viewMode={viewMode}
-              />
+              <Map provinceCounts={provinceCounts} ridingCounts={ridingCounts} viewMode={viewMode} />
             </div>
           )}
         </main>

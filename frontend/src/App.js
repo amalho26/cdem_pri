@@ -4,7 +4,6 @@ import MainPage from './Pages/MainPage';
 import CreateChartPage from './Pages/CreateChartPage';
 import ViewInteractiveMapPage from './Pages/ViewInteractiveMap';
 import ExportDataPage from './Pages/ExportDataPage';
-import DemographicsPage from './Pages/DemographicsPage';
 import ViewStatisticsPage from './Pages/ViewStatisticsPage';
 
 function App() {
@@ -15,9 +14,7 @@ function App() {
         <Route path="/create" element={<CreateChartPage/>} />
         <Route path="/map" element={<ViewInteractiveMapPage/>}/>
         <Route path="/export" element={<ExportDataPage/>}/>
-        <Route path="/demographics" element={<DemographicsPage/>}/>
         <Route path="/stats" element={<ViewStatisticsPage/>}/>
-        {/* Add other routes as necessary */}
       </Routes>
     </Router>
   );
