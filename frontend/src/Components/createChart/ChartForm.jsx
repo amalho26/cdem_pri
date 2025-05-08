@@ -25,17 +25,18 @@ const ChartForm = () => {
   useEffect(() => {
     if (selectedYear) {
       axios
-        .get("http://3.96.189.26:5001/api/all_data", {
+        .get("http://playground.c-dem.ca/api/all_data", {
           headers: { db: `${selectedYear}_democracy_checkup` },
         })
         .then((response) => {
-          setSqlData(response.data);
+          setSqlData(response.daxta);
           console.log("SQL Data:", response.data);
         })
         .catch((err) => {
           console.error("Error:", err);
         });
     }
+    console.log(sqlData)
   }, [selectedYear]);
 
   //questions
